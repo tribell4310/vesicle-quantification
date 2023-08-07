@@ -1,3 +1,9 @@
+"""
+
+Functions taken from: https://scipython.com/blog/direct-linear-least-squares-fitting-of-an-ellipse/
+
+"""
+
 import numpy as np
 import math
 import matplotlib.pyplot as plt
