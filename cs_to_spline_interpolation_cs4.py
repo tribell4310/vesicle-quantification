@@ -7,28 +7,6 @@ cs_to_spline_interpolation_cs4.py
 This script takes a cryosparc .cs file for particles or particle passthrough and uses the coordinates to
 	interpolate complex vesicle shapes and calculate sizes and roundnesses.
 
-Haven't dealt with the following:
- - What happens when I hit the edges of a micrograph (SOLVED)
-   - Get the micrograph dimensions at the start
-   - Check to see if any of the interpolated points are off the edge of the micrograph
-   - If so, divert to three point picking using first, last, and center point in x and y
-   - I'm reopening this - I would get better results if I did least squares fitting of a standard ellipse
-     to the points.
-
- - Discriminating different vesicles by relative pick distances
-   - This still isn't working very well.
-   - I need to shift from mean/median threshholding to an arbitrary hardcoded threshhold.
-   - I can do this by running a set at different levels and gauging performance.
-   - I have now set an arbitrary 1500 px threshold :(
-
- - Automatically categorizing multilamellar vesicle picks (stratification)
-   - At the end of each micrograph, calculate the center of the box that inscribes each set of points
-   - Recursively calculate how many boxes are completely within that box
-     - this left > that left
-     - this top > that top
-     - this right < that right
-     - this bottom < that bottom
-
 For cryosparc 4.
 
 """
