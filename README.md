@@ -70,7 +70,7 @@ In addition to the python environment, you will also need a system with [proc2d]
    - Vesicle perimiter
    - Vesicle effective circular diameter
    - Vesicle circularity (1 is a perfect circle)
-   - Vesicle stratification order (for multilamellar samples, how many vesicles other contain this vesicle)
+   - Vesicle stratification order (for multilamellar samples, how many other vesicles contain this vesicle)
 
 ![016843626466719142702_prom_wt_bucket_all_020_patch_aligned_doseweighted_SpLiNeS](https://github.com/tribell4310/vesicle-quantification/assets/67428134/f5096912-84b7-4a73-9d41-3abf4817b337)
 
