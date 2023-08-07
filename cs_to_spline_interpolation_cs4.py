@@ -2,7 +2,7 @@
 Tristan Bell
 Massachusetts General Hospital
 
-cs_to_vesicle_crop_cs4.py
+cs_to_spline_interpolation_cs4.py
 
 This script takes a cryosparc .cs file for particles or particle passthrough and uses the coordinates to
 	interpolate complex vesicle shapes and calculate sizes and roundnesses.
