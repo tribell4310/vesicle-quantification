@@ -18,7 +18,6 @@ The data processing scripts require python 3.5 or higher, preferably installed i
  - pillow
  - scipy
  - matplotlib
- - scikit-image
 
 Both `cs_to_spline_interpolation_cs4.py` and `halir_flusser_ellipse.py` need to be stored in your working directory.
 
