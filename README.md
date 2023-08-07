@@ -20,6 +20,8 @@ The data processing scripts require python 3.5 or higher, preferably installed i
  - matplotlib
  - scikit-image
 
+In addition to the python environment, you will also need a system with [proc2d](https://blake.bcm.edu/emanwiki/EMAN1/Programs/Proc2D) installed.
+
 ## Preprocess micrographs and select particles in cryosparc
 
  - Load your images (movies of still images) into cryosparc.
@@ -74,6 +76,9 @@ The data processing scripts require python 3.5 or higher, preferably installed i
 
 
 ![017404409993085251713_prom_wt_bucket_all_044_patch_aligned_doseweighted_SpLiNeS](https://github.com/tribell4310/vesicle-quantification/assets/67428134/1e4cc8b6-f761-47a3-a255-4741bdae8865)
+
+![image](https://github.com/tribell4310/vesicle-quantification/assets/67428134/91d0d331-4d17-4544-a970-8bc3e4a50f63)
+
 
 
 ## Questions
