@@ -23,8 +23,6 @@ import PIL
 from PIL import Image
 from scipy import interpolate
 from matplotlib import pyplot as plt
-import datetime
-from skimage import filters
 import halir_flusser_ellipse as HFE #This is a custom package, must be in the working directory
 from scipy.special import ellipe
 import warnings
@@ -85,7 +83,7 @@ def main(csJobID, inCs):
 	else:
 		rel_mod = 2
 
-	# NEW LOOP does spline fitting, interpolation, and calculates perimeter, area, and roundness
+	# Spline fitting, interpolation, and calculate perimeter, area, roundness
 	counter = 0
 	global_counter = 0
 	for thing in coord_dict:
@@ -105,8 +103,7 @@ def main(csJobID, inCs):
 		distances = []
 		for i in range(0, len(list_of_coords)):
 			distances.append(get_euclidian_distance(list_of_coords[i-1], list_of_coords[i]))
-		my_threshold = 1500
-		correct_answers = [1,1,1,1,1,1,2,2,1,1,1,2,3]
+		my_threshold = 1500 #hardcoded, can be changed to pick vesicles closer together
 
 		# Divide the vesicles into chunks in a list of lists
 		curr_start_idx = 0
@@ -139,20 +136,19 @@ def main(csJobID, inCs):
 			try:
 				tck, u = interpolate.splprep([x, y], s=0, per=True)
 			except:
-				print("SPLINE ERROR!", thing)
+				print("SPLINE ERROR:", thing)
 
 			# Interpolate discrete points along the set of splines
 			xi, yi = interpolate.splev(np.linspace(0, 1, 10000), tck)
 
 			# Check to see if the splines extend off an edge of the image
-			# If so, we will divert to defining a three point circle using the user input x and y
+			# If so, we will divert to elliptical fitting
 			if (min(xi) < coord_dict[thing]["min_x"]) or (min(yi) < coord_dict[thing]["min_y"]) or (max(xi) > coord_dict[thing]["max_x"]) or (max(yi) > coord_dict[thing]["max_y"]):
 				edge_flag = True
 			else:
 				edge_flag = False
 
 			# Calculate parameters and plot out
-			
 			ax.plot(x, y, 'or')
 
 			if edge_flag == False:
@@ -222,6 +218,10 @@ def main(csJobID, inCs):
 			out_dict[thing][chunk_idx]["insc_box_top"] = insc_box_top
 			out_dict[thing][chunk_idx]["insc_box_bottom"] = insc_box_bottom
 			out_dict[thing][chunk_idx]["stratification_order"] = 1
+			if edge_flag == False:
+				out_dict[thing][chunk_idx]["fit_or_ellipse"] = "spline-fit"
+			else:
+				out_dict[thing][chunk_idx]["fit_or_ellipse"] = "ellipse-edge"
 
 		# Common plotting finish
 		fig.savefig(os.path.join(os.getcwd(), "splines", thing.replace(".mrc", "_SpLiNeS.png")))
@@ -255,11 +255,6 @@ def main(csJobID, inCs):
 	print("\n\t...done.")
 
 
-def perimeter_ellipse(a, b):
-	assert(a > b > 0)
-	return 4*a*ellipe(1 - (b/a)**2)
-
-
 def compare_insc_boxes(dict_i, dict_j):
 	""" Return True if inscribing box for vesicle i is inside of that for vesicle j.  Else return False. """
 	
@@ -282,17 +277,26 @@ def compare_insc_boxes(dict_i, dict_j):
 		return False
 
 
+def find_mcg_name(query, np_array):
+	""" Return index of cs numpy array that contains the micrograph info"""
+	for i in range(0, len(np_array)):
+		try:
+			if query in str(np_array[i]):
+				return i
+		except:
+			pass
+
+
+def get_euclidian_distance(A, B):
+	y1 = A[1]
+	y2 = B[1]
+	x1 = A[0]
+	x2 = B[0]
+	return math.sqrt((y2-y1)**2 + (x2-x1)**2)
+
+
 def get_roundness(P, A):
 	return 4 * math.pi * A / (P * P)
-
-
-def shoelace_area(x, y):
-	""" Adapted from https://www.101computing.net/the-shoelace-algorithm/ """
-	area_times_two = float(0)
-	for i in range(0, len(x)):
-		area_times_two += ((x[i-1] * y[i]) - (x[i] * y[i-1]))
-	area = abs(area_times_two) / 2
-	return area
 
 
 def get_sizes(inCs):
@@ -313,135 +317,6 @@ def get_sizes(inCs):
 	return mcg_h, mcg_w, box
 
 
-def circle_three_points(A, B, C):
-	# Define the slopes and intercepts of the perpendicular bisectors of vectors AB and BC
-	m_perpAB, b_perpAB = perp_bisect(A, B)
-	m_perpBC, b_perpBC = perp_bisect(B, C)
-
-	# Determine the intersection of the perpendicular bisectors, this is the *origin*
-	origin = get_intersection(m_perpAB, b_perpAB, m_perpBC, b_perpBC)
-	if origin == False:
-		return origin, False
-
-	# Find the euclidian distance between the origin and A, this is the *radius* 
-	radius = int(round(statistics.mean([get_euclidian_distance(A, origin), get_euclidian_distance(B, origin), get_euclidian_distance(C, origin)]), 0))
-
-	return origin, radius
-
-
-def perp_bisect(A, B):
-	# If the y-vals are the same, we get meaningless values.  Have to add a pseudocount.
-	if A[1] == B[1]:
-		B = (B[0], (B[1]+0.0001))
-	if A[0] == B[0]:
-		B = ((B[0]+0.0001), B[1])
-
-	# Define slope and intercept for vector AB
-	m = (B[1] - A[1]) / (B[0] - A[0])
-	b = A[1] - (m * A[0])
-
-	# Slope of perpendicular is inverse reciprocal
-	m_perp = -1 / m
-
-	# Find the midpoint of AB
-	midpoint_x = (A[0] + B[0]) / 2
-	midpoint_y = (A[1] + B[1]) / 2
-
-	# Find the intercept that fulfills the midpoint and the known slope
-	b_perp = midpoint_y - (m_perp * midpoint_x)
-
-	return m_perp, b_perp
-
-
-def get_intersection(m1, b1, m2, b2):
-	x_int = (b2 - b1) / (m1 - m2)
-	y_int = (m1 * x_int) + b1
-	try:
-		return (int(round(x_int, 0)), int(round(y_int, 0)))
-	except:
-		return False
-
-
-def get_euclidian_distance(A, B):
-	y1 = A[1]
-	y2 = B[1]
-	x1 = A[0]
-	x2 = B[0]
-	return math.sqrt((y2-y1)**2 + (x2-x1)**2)
-
-
-def parse_star(inMcgs):
-	# Open file
-	f = open(inMcgs, "r")
-	lines = f.readlines()
-
-	# Find the position of "_rlnMicrographName" in the star file loop definition
-	for i in range(0, len(lines)):
-		if "loop_" in lines[i]:
-			loop_start = i
-			for j in range(i+1, len(lines)):
-				if "_rlnMicrographName" in lines[j]:
-					parse_pos = int(lines[j][lines[j].find("#")+1:])-1
-					break
-
-	# Isolate the micrograph name from each line of the star file
-	mcgs = []
-	for i in range(loop_start+1, len(lines)):
-		if lines[i][0] != "_":
-			mcgs.append(last_slash(lines[i].split(" ")[parse_pos]))
-	return mcgs
-
-
-def mcg_find_suffix(full_list, start_ind):
-	# Take the substring from the start of mcg name to end of the full cryosparc name
-	names_list = []
-	for i in range(0, len(full_list)):
-		names_list.append(full_list[i][start_ind:])
-	
-	# Leftpad all names to the same length
-	max_len = 0
-	for i in range(0, len(names_list)):
-		if len(names_list[i]) > max_len:
-			max_len = len(names_list[i])
-	same_len_names = []
-	for i in range(0, len(names_list)):
-		temp_str = names_list[i]
-		if len(names_list[i]) < max_len:
-			while len(temp_str) < max_len:
-				temp_str = " "+temp_str
-		same_len_names.append(temp_str)
-
-	# Make an invariance matrix
-	const_matrix = get_constant_matrix(same_len_names)
-
-	# Working backwards, find the first True-False transition
-	for i in range(1, len(const_matrix)):
-		if const_matrix[-i] == True:
-			if const_matrix[-(i+1)] == False:
-				end_index = -i
-				break
-
-	return same_len_names[0][end_index:]
-
-
-def get_constant_matrix(mcg_names):
-	constant_container = []
-	for i in range(0, len(mcg_names[0])):
-		is_constant = True
-		for j in range(1, len(mcg_names)):
-			try:
-				if len(mcg_names[j][i]) == len(mcg_names[0][i]):
-					if len(mcg_names[j-1][i]) == len(mcg_names[0][i]):
-						if mcg_names[j][i] != mcg_names[j-1][i]:
-							is_constant = False
-							break
-			except:
-				pass
-		constant_container.append(is_constant)
-	
-	return constant_container
-
-
 def infer_index(np_array):
 	# Defined pattern is binary string, list of two ints >1000, float <= 1, float <=1
 	for i in range(0, len(np_array[1])):
@@ -460,36 +335,16 @@ def infer_index(np_array):
 	return startInd
 
 
-def find_mcg_name(query, np_array):
-	""" Return index of cs numpy array that contains the micrograph info"""
-	for i in range(0, len(np_array)):
-		try:
-			if query in str(np_array[i]):
-				return i
-		except:
-			pass
-
-
-def line_writer(x, y):
-	# Process x and y
-	padded_x = leftpad(x, 12)
-	padded_y = leftpad(y, 12)
-	remainder = "     0.080000            0     0.000000 \n"
-	return (padded_x + " " + padded_y + remainder)
-
-
-def leftpad(inStr, final_len):
-	while len(inStr) < final_len:
-		inStr = " "+inStr
-	return inStr
-
-
-def no_dot(inStr):
+def last_slash(inStr):
 	"""
-	Relion converts "." in cryoparc names to "_" - this function takes a script and performs this
-	conversion prior to name-matching.
+	Returns the component of a string past the last forward slash character.
 	"""
-	return inStr.replace(".", "_")
+	prevPos = 0
+	currentPos = 0
+	while currentPos != -1:
+		prevPos = currentPos
+		currentPos = inStr.find("/", prevPos+1)
+	return inStr[prevPos+1:]
 
 
 def no_ext(inStr):
@@ -504,37 +359,18 @@ def no_ext(inStr):
 	return inStr[0:prevPos]
 
 
-def last_slash(inStr):
-	"""
-	Returns the component of a string past the last forward slash character.
-	"""
-	prevPos = 0
-	currentPos = 0
-	while currentPos != -1:
-		prevPos = currentPos
-		currentPos = inStr.find("/", prevPos+1)
-	return inStr[prevPos+1:]
+def perimeter_ellipse(a, b):
+	assert(a > b > 0)
+	return 4*a*ellipe(1 - (b/a)**2)
 
 
-def clean_large_numbers(inInt):
-	"""
-	Takes an integer and re-formats to string with human-readable comma-spaced numbers.
-	"""
-	inStr = str(inInt)
-	outStr = ""
-	
-	if len(inStr) > 3:
-		for i in range(1, len(inStr)+1):
-			outStr = inStr[-i] + outStr
-			if i % 3 == 0:
-				outStr = "," + outStr
-	else:
-		outStr = inStr
-
-	if outStr[0] == ",":
-		return outStr[1:]
-	else:
-		return outStr
+def shoelace_area(x, y):
+	""" Adapted from https://www.101computing.net/the-shoelace-algorithm/ """
+	area_times_two = float(0)
+	for i in range(0, len(x)):
+		area_times_two += ((x[i-1] * y[i]) - (x[i] * y[i-1]))
+	area = abs(area_times_two) / 2
+	return area
 
 
 if __name__ == "__main__":
