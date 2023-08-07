@@ -20,7 +20,7 @@ The data processing scripts require python 3.5 or higher, preferably installed i
  - matplotlib
  - scikit-image
 
-Both 'cs_to_spline_interpolation_cs4.py' and 'halir_flusser_ellipse.py' need to be stored in your working directory.
+Both `cs_to_spline_interpolation_cs4.py` and `halir_flusser_ellipse.py` need to be stored in your working directory.
 
 In addition to the python environment, you will also need a system with [proc2d](https://blake.bcm.edu/emanwiki/EMAN1/Programs/Proc2D) installed.
 
