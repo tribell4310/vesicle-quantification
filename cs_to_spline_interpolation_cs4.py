@@ -154,6 +154,7 @@ def main(csJobID, inCs):
 			if edge_flag == False:
 				# Finish plotting with original spline strategy
 				ax.plot(xi, yi, '-b')
+				ax.text(sum(xi)/len(xi), sum(yi)/len(yi), str(chunk_idx))
 
 				# Along the interpolated points, sum the distances of straight lines connecting them to get a perimiter
 				perimeter = float(0)
@@ -189,6 +190,7 @@ def main(csJobID, inCs):
 				# Draw this circle on the micrograph
 				x_fit, y_fit = HFE.get_ellipse_pts((x0, y0, ap, bp, e, phi))
 				plt.plot(x_fit, y_fit, color="cyan")#, fill=False)
+				plt.text(x0, y0, str(chunk_idx))
 
 				# Perimiter and area
 				perimeter = perimeter_ellipse(ap, bp)
